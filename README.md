@@ -13,7 +13,7 @@ Follow the steps ahead to set up and run the project.
 5. Install the dependencies using `pip install -r requirements.txt`
 6. Create an `.env` file in the project directory and add the following to the file. Add values for all the variables.
     ```text
-    SECRET_KEY=<key>
+    SECRET_KEY=<any-hash-value>
 
     # Development
     LOCAL_SETTINGS_MODULE=homiechat.settings.development
@@ -21,7 +21,6 @@ Follow the steps ahead to set up and run the project.
     # Production
     LOCAL_SETTINGS_MODULE=homiechat.settings.production
     ```
-
 7. Create database migrations using `python manage.py makemigrations` and then migrate them using `python manage.py migrate`.
 8. Create a superuser using the following `python manage.py createsuperuser` and fill the required details.
 9. Run the server using `python manage.py runserver`.
@@ -35,5 +34,21 @@ Follow the steps ahead to set up and run the project.
 * Share Screen
 
 ## Features: TODO
-* Waiting Rooms
+* Waiting Rooms (TBD)
+* Global and private messages (TBD)
 * Roll-based access
+    * General
+        * Attach files to the meeting (TBD)
+        * Attach files to messages (optional)
+        * Share meeting details (TBD)
+    * Host
+        * Manage meeting credentials and settings (TBD)
+        * Mute and unmute participants audio (TBD)
+        * Mute and unmute participants video (TBD)
+        * Kick participants out of the meeting (TBD)
+        * Open and close entry to the meeting (TBD)
+* Update UI (TBD)
+* Update project details (Vaibhav)
+* Extend support to users over different internet connections (TBD)
+* Configure Redis (optional)
+* Host (optional)
