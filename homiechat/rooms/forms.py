@@ -1,17 +1,17 @@
 from django import forms
 
-from .models import HomieChatUser, Room
+from .models import User, Room
 
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 
 from django.contrib.auth import authenticate
 
-class HomieChatUserCreationForm(UserCreationForm):
+class CreateUserForm(UserCreationForm):
     email = forms.EmailField(max_length=60, help_text='Required. Add a valid email address.')
     bio = forms.CharField(max_length=60, widget=forms.Textarea, help_text='Type something about yourself.', required=False)
 
     class Meta:
-        model = HomieChatUser
+        model = User
         fields = (
             'name',
             'gender',
@@ -27,7 +27,7 @@ class UserAuthenticationForm(forms.ModelForm):
     password = forms.CharField(label='Password', widget=forms.PasswordInput)
 
     class Meta:
-        model = HomieChatUser
+        model = User
         fields = (
             'email',
         )
@@ -39,12 +39,12 @@ class UserAuthenticationForm(forms.ModelForm):
         if not authenticate(email=email, password=password):
             raise forms.ValidationError('Invalid login.')
 
-class HomieChatUserUpdateForm(forms.ModelForm):
+class UpdateUserForm(forms.ModelForm):
     email = forms.EmailField(max_length=60, help_text='Required. Add a valid email address.')
     bio = forms.CharField(max_length=60, widget=forms.Textarea, help_text='Type something about yourself.', required=False)
 
     class Meta:
-        model = HomieChatUser
+        model = User
         fields = (
             'name',
             'gender',

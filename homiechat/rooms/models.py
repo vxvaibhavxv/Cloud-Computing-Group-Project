@@ -1,13 +1,7 @@
 from django.db import models
-
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-
 from django.templatetags.static import static
 
-# Create your models here.
-
-# Pass these as two-tuple values
-# in GENDER_CHOICES
 MALE_NUMBER = 1
 FEMALE_NUMBER = 2
 MALE = 'Male'
@@ -19,7 +13,6 @@ GENDER_CHOICES = [
 ]
 
 class MyAccountManager(BaseUserManager):
-
     def create_user(self, username, email, password=None):
         if not email:
             raise ValueError("Users must have an email address.")
@@ -42,35 +35,29 @@ class MyAccountManager(BaseUserManager):
             username=username,
         )
 
-
         user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
 
-
-
-
-
-class HomieChatUser(AbstractBaseUser):
-    # required to include
-    email = models.EmailField(verbose_name='email', unique=True, max_length=60)
+class User(AbstractBaseUser):
+    email = models.EmailField(verbose_name='Email', unique=True, max_length=60)
     username = models.CharField(max_length=60, unique=True)
-    date_joined = models.DateField(verbose_name='date joined', auto_now_add=True)
-    last_login = models.DateField(verbose_name='last login', auto_now=True)
-    is_admin = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    date_joined = models.DateField(verbose_name='Date Joined', auto_now_add=True)
+    last_login = models.DateField(verbose_name='Last Login', auto_now=True)
+    is_admin = models.BooleanField(default=False, verbose_name="Admin?")
+    is_active = models.BooleanField(default=True, verbose_name="Active?")
+    is_staff = models.BooleanField(default=False, verbose_name="Staff?")
+    is_superuser = models.BooleanField(default=False, verbose_name="Superuser?")
 
-    # new
-    name = models.CharField(max_length=60, verbose_name='name')
-    bio = models.CharField(max_length=60, verbose_name='bio', null=True, blank=True, default=None)
+    first_name = models.CharField(max_length=60, verbose_name='First Name')
+    last_name = models.CharField(max_length=60, verbose_name='Last Name')
+    bio = models.CharField(max_length=60, verbose_name='Bio', null=True, blank=True, default=None)
     image = models.ImageField(upload_to='user_images', null=True, blank=True)
     gender = models.SmallIntegerField(choices=GENDER_CHOICES, null=True, blank=True)
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username',]
+    REQUIRED_FIELDS = ['username', ]
 
     @property
     def image_url(self):
@@ -100,15 +87,10 @@ class HomieChatUser(AbstractBaseUser):
     class Meta:
         verbose_name_plural = "Homie Chat Users"
 
-
-
 class Room(models.Model):
-    # code generated using signer
-    # will be trimmed to get a unique code
-    # of length 43
     code = models.CharField(max_length=44, unique=True)
     name = models.CharField(max_length=40, null=True, blank=True, default=None)
-    user = models.ForeignKey(to=HomieChatUser, on_delete=models.CASCADE)
+    user = models.ForeignKey(to=User, on_delete=models.CASCADE)
 
 class Video(models.Model):
     video_file = models.FileField(upload_to='room_videos')
@@ -116,7 +98,5 @@ class Video(models.Model):
 
     @property
     def video_url(self):
-        url = self.video_file.url
-
-        return url
+        return self.video_file.url
 

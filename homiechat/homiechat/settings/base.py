@@ -66,7 +66,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = "rooms.HomieChatUser"
+AUTH_USER_MODEL = "rooms.User"
 
 LOGIN_URL = 'login_view'
 
