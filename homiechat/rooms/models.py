@@ -51,7 +51,7 @@ class User(AbstractBaseUser):
     is_superuser = models.BooleanField(default=False, verbose_name="Superuser?")
 
     first_name = models.CharField(max_length=60, verbose_name='First Name')
-    last_name = models.CharField(max_length=60, verbose_name='Last Name')
+    last_name = models.CharField(max_length=60, verbose_name='Last Name', blank = True)
     bio = models.CharField(max_length=60, verbose_name='Bio', null=True, blank=True, default=None)
     image = models.ImageField(upload_to='user_images', null=True, blank=True)
     gender = models.SmallIntegerField(choices=GENDER_CHOICES, null=True, blank=True)

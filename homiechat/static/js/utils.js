@@ -1,4 +1,4 @@
-function copyCode(event){
+function copyCode(event) {
     var copyText = document.createElement('textarea');
     textArea.innerHTML = event.srcElement.id;
 
