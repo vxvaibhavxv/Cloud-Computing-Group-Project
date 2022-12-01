@@ -25,6 +25,10 @@ let localDisplayStream = new MediaStream();
 btnToggleAudio = document.querySelector("#btn-toggle-audio");
 btnToggleVideo = document.querySelector("#btn-toggle-video");
 
+// Locks
+let videoLockedByHost = false;
+let audioLockedByHost = false;
+
 // Send button and input field to type message
 let btnSendMsg = document.querySelector('#btn-send-msg');
 let messageInput = document.querySelector('#msg');
@@ -47,6 +51,36 @@ let endPoint = wsStart + loc.host + loc.pathname;
 let webSocket;
 let btnJoin = document.querySelector('#btn-join');
 
+function kickUser(username) {
+    sendSignal('kick-user', {
+        "target": username
+    });
+}
+
+function muteUserVideo(username) {
+    sendSignal('mute-user-video', {
+        "target": username
+    });
+}
+
+function muteUserAudio(username) {
+    sendSignal('mute-user-audio', {
+        "target": username
+    });
+}
+
+function closeRoom() {
+    sendSignal("change-room-entry", {
+        "state": "false"
+    });
+}
+
+function openRoom() {
+    sendSignal("change-room-entry", {
+        "state": "true"
+    });
+}
+
 // Join room (initiate websocket connection) on button click
 btnJoin.onclick = () => {
     // Disable the join button
@@ -59,7 +93,7 @@ btnJoin.onclick = () => {
     // When the connection opens or successfully starts with the server
     webSocket.onopen = function(e) {
         console.log('Connection opened', e);
-        
+
         // Notify other peers about user's joining
         sendSignal('new-peer', {
             'local_screen_sharing': false,
@@ -93,7 +127,8 @@ function webSocketOnMessage(event) {
     let parsedData = JSON.parse(event.data);
     let action = parsedData['action'];
     let peerUsername = parsedData['peer'];
-    
+    console.log(parsedData)
+
     // Ignore all messages from oneself
     if (peerUsername == username)
         return;
@@ -115,6 +150,46 @@ function webSocketOnMessage(event) {
         }
         
         return;
+    }
+
+    // Case: Kicked out by the host
+    if (action == "kick-user") {
+        window.location = "/"
+        return;
+    }
+
+    // Case: Host muted your video
+    if (action == 'mute-video') {
+        videoLockedByHost = true;
+        btnToggleVideo.disabled = true;
+        videoTracks[0].enabled = false;
+        btnToggleVideo.innerHTML = 'Video On';
+    }
+
+    // Case: Host muted your audio
+    if (action == 'mute-audio') {
+        audioLockedByHost = true;
+        btnToggleAudio.disabled = true;
+        audioTracks[0].enabled = false;
+        btnToggleAudio.innerHTML = 'Unmute';
+    }
+
+    // Case: Host unmuted your video
+    if (action == 'unmute-video') {
+        videoLockedByHost = false;
+        btnToggleVideo.disabled = false;
+    }
+
+    // Case: Host unmuted your audio
+    if (action == 'unmute-audio') {
+        audioLockedByHost = false;
+        btnToggleAudio.disabled = false;
+    }
+
+    // Case: Host unmuted your audio
+    if (action == 'toggle-room-entry') {
+        audioLockedByHost = false;
+        btnToggleAudio.disabled = false;
     }
 
     // remote_screen_sharing from the remote peer
@@ -204,6 +279,9 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
 
         // Handler for audio toggle button
         btnToggleAudio.onclick = function() {
+            if (audioLockedByHost)
+                return;
+
             audioTracks[0].enabled = !audioTracks[0].enabled;
 
             if (audioTracks[0].enabled) {
@@ -215,6 +293,9 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
 
         // Handler for video toggle button
         btnToggleVideo.onclick = function() {
+            if (videoLockedByHost)
+                return;
+
             videoTracks[0].enabled = !videoTracks[0].enabled;
 
             if (videoTracks[0].enabled) {

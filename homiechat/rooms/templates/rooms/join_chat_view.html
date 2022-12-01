@@ -3,54 +3,60 @@
 {% load static %}
 
 {% block content %}
-    <h3 id="label-username">{{request.user.username}}</h3>
-    <div>
-		<button id="btn-join" class="btn btn-primary">Join Room</button>
-	</div>
-    <div class="main-grid-container">
-        <!-- for grid layout
+<h3 id="label-username">{{request.user.username}}</h3>
+<div>
+    <button id="btn-join" class="btn btn-primary">Join Room</button>
+</div>
+<div class="main-grid-container">
+    <!-- for grid layout
         assign class video-grad-layout -->
-        <div id="video-container">
-            <div><video id="local-video" style="float: left;" autoplay playsinline></video></div>
-            <button id="btn-toggle-audio" class="btn btn-dark">Audio Mute</button>
-            <button id="btn-toggle-video" class="btn btn-dark">Video Off</button>
+    <div id="video-container">
+        <div><video id="local-video" style="float: left;" autoplay playsinline></video></div>
+        <button id="btn-toggle-audio" class="btn btn-dark">Audio Mute</button>
+        <button id="btn-toggle-video" class="btn btn-dark">Video Off</button>
+    </div>
+    <div id="chat">
+        <h3> CHAT </h3>
+        <div id="messages">
+            <ul id="message-list"></ul>
         </div>
-        <div id="chat">
-            <h3> CHAT </h3>
-            <div id="messages">
-                <ul id="message-list"></ul>
-            </div>
-            <div id="ct"><input id="msg" disabled><button id="btn-send-msg" class="btn btn-success" disabled>send</button></div>
-            <button id="btn-share-screen" class="btn btn-dark">Share Screen</button>
+        <div id="ct"><input id="msg" disabled><button id="btn-send-msg" class="btn btn-success" disabled>send</button>
+        </div>
+        <button id="btn-share-screen" class="btn btn-dark">Share Screen</button>
 
-            <button id="btn-record-screen">Record Screen</button>
+        <button id="btn-record-screen">Record Screen</button>
 
-            <input type="file">
-            <div id="select-file-dialog" style="display: none;">
-                <div id="dialog-content">
-                  <div id="select-file">
+        <input type="file">
+        <div id="select-file-dialog" style="display: none;">
+            <div id="dialog-content">
+                <div id="select-file">
                     <div id="label">Select a file:</div>
                     <input type="file" id="select-file-input">
-                  </div>
-                  <div id="dialog-footer">
+                </div>
+                <div id="dialog-footer">
                     <button id="ok-button" disabled>Ok</button>
                     <button id="cancel-button" class="cancel-button">Cancel</button>
-                  </div>
                 </div>
-              </div>
-
-            <audio class="sound-effect" src="{% static 'sounds/new-chat-message.mp3' %}" id="chat-sound"></audio>
-            <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
-            <audio class="sound-effect" src="{% static 'sounds/peer-connection-opened.mp3' %}" id="new-connection"></audio>
-            <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
+            </div>
         </div>
+
+        <audio class="sound-effect" src="{% static 'sounds/new-chat-message.mp3' %}" id="chat-sound"></audio>
+        <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
+        <audio class="sound-effect" src="{% static 'sounds/peer-connection-opened.mp3' %}" id="new-connection"></audio>
+        <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
     </div>
-    <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
-    <script type="text/javascript">
-        let username = '{{request.user.username}}';
-    </script>
-    <script type="text/javascript" src="{% static 'js/peer.js' %}"></script>
+</div>
+<script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
+<script type="text/javascript">
+    let username = '{{request.user.username}}';
+    let roomCode = "{{ room_code }}";
+    let isHost = "{{is_host}}";
+</script>
+<script type="text/javascript" src="{% static 'js/peer.js' %}"></script>
 {% endblock %}
 {% block footer_block %}
-    <footer><p class="font-weight-bold" style="text-align: center;">Sound effects for new participant and chat obtained from https://zapslat.com</p></footer>
+<footer>
+    <p class="font-weight-bold" style="text-align: center;">Sound effects for new participant and chat obtained from
+        https://zapslat.com</p>
+</footer>
 {% endblock %}

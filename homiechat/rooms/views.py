@@ -145,7 +145,9 @@ def prepare_chat_view(request):
 @login_required
 def join_chat_view(request, room_code):
     context = {}
+    room = Room.objects.get(code = room_code)
     context['room_code'] = room_code
+    context["is_host"] = room.user.username == request.user.username
     return render(request, 'rooms/join_chat_view.html', context=context)
 
 @login_required
