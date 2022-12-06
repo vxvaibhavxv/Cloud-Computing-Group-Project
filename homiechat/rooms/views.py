@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from .models import User, Room
 from .forms import (
     CreateUserForm,
@@ -148,6 +148,14 @@ def join_chat_view(request, room_code):
     room = Room.objects.get(code = room_code)
     context['room_code'] = room_code
     context["is_host"] = room.user.username == request.user.username
+    context["room_host"] = room.user.username
+    context["room_name"] = room.name
+    context["room_description"] = room.description
+
+    if request.method == "POST":
+        context["waiting_room"] = request.POST.get("waiting_room") == "true"
+        context["limit"] = int(request.POST.get("limit"))
+    
     return render(request, 'rooms/join_chat_view.html', context=context)
 
 @login_required

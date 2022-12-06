@@ -3,39 +3,58 @@
 {% load static %}
 
 {% block content %}
-    <div id="rooms" class="nav justify-content-center">
-        <ul>
-            {% for room in rooms %}
-                <li>
-                    <p class="font-weight-bold">
-                        {{room.name}} <a class="btn btn-success" href="{% url 'join_chat_view' room.code %}">Join</a>
-                        <button id="{{room.code}}" class="btn btn-info">Copy Code</button>
-                        <script>
-                            var btnCopy = document.querySelector('#{{room.code}}');
-                            btnCopy.addEventListener('click', () => {
-                                var copyText = document.createElement('textarea');
-                                document.body.appendChild(copyText);
-                                copyText.innerHTML = '{{room.code}}';
-
-                                /* Select the text field */
-                                copyText.select();
-                                copyText.setSelectionRange(0, 99999); /* For mobile devices */
-
-                                /* Copy the text inside the text field */
-                                document.execCommand("copy");
-                                document.body.removeChild(copyText);
-                            });
-                        </script>
-                    </p>
-                </li>
-            {% endfor %}
-        </ul>
-        <!-- <ul>
-            <li><p class="font-weight-bold">Room 1 <a class="btn btn-success">Join</a></p></li>
-            <li><p class="font-weight-bold">Room 2 <a class="btn btn-success">Join</a></p></li>
-        </ul> -->
-    </div>
-    <div class="nav justify-content-center">
+    <div class="nav justify-content-center mb-3">
         <a class="btn btn-success" href="{% url 'room_creation_view' %}">Create New Room</a>
+    </div>
+    <div id="rooms" class="nav justify-content-center">
+        <table class="table table-striped table-hover border">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Room Name</th>
+                    <th scope="col">Limit</th>
+                    <th scope="col">Waiting Rooms</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for room in rooms %}
+                <tr>
+                    <form action="{% url 'join_chat_view' room.code %}" method="POST">
+                        {% csrf_token %}
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ room.name }}</td>
+                        <td><input type="number" name="limit" class="form-control" min="1" max="200" value="100"></td>
+                        <td>
+                            <select name="waiting_room" class="form-select">
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button type="submit" class="btn btn-success">Join Room</button>
+                            <button type="button" id="{{room.code}}" class="btn btn-info">Copy Code</button>
+                            <script>
+                                var btnCopy = document.querySelector('#{{room.code}}');
+                                btnCopy.addEventListener('click', () => {
+                                    var copyText = document.createElement('textarea');
+                                    document.body.appendChild(copyText);
+                                    copyText.innerHTML = '{{room.code}}';
+
+                                    /* Select the text field */
+                                    copyText.select();
+                                    copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+                                    /* Copy the text inside the text field */
+                                    document.execCommand("copy");
+                                    document.body.removeChild(copyText);
+                                });
+                            </script>
+                        </td>
+                    </form>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 {% endblock %}

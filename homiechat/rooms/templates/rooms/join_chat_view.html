@@ -3,60 +3,87 @@
 {% load static %}
 
 {% block content %}
-<h3 id="label-username">{{request.user.username}}</h3>
-<div>
-    <button id="btn-join" class="btn btn-primary">Join Room</button>
-</div>
-<div class="main-grid-container">
-    <!-- for grid layout
-        assign class video-grad-layout -->
-    <div id="video-container">
-        <div><video id="local-video" style="float: left;" autoplay playsinline></video></div>
-        <button id="btn-toggle-audio" class="btn btn-dark">Audio Mute</button>
-        <button id="btn-toggle-video" class="btn btn-dark">Video Off</button>
-    </div>
-    <div id="chat">
-        <h3> CHAT </h3>
-        <div id="messages">
-            <ul id="message-list"></ul>
-        </div>
-        <div id="ct"><input id="msg" disabled><button id="btn-send-msg" class="btn btn-success" disabled>send</button>
-        </div>
-        <button id="btn-share-screen" class="btn btn-dark">Share Screen</button>
 
-        <button id="btn-record-screen">Record Screen</button>
-
-        <input type="file">
-        <div id="select-file-dialog" style="display: none;">
-            <div id="dialog-content">
-                <div id="select-file">
-                    <div id="label">Select a file:</div>
-                    <input type="file" id="select-file-input">
-                </div>
-                <div id="dialog-footer">
-                    <button id="ok-button" disabled>Ok</button>
-                    <button id="cancel-button" class="cancel-button">Cancel</button>
+<div id="main-container" class="bg-dark">
+    <div id="left-panel">
+        <div id="main-screen" class="">
+            <video id="main-screen-video" autoplay playsinline></video>
+        </div>
+        <div id="participants" class="">
+            <div id="local-video-container" class="participant-video-container">
+                <video id="local-video" class="participant-video" autoplay playsinline></video>
+                <div class="video-overlay">
+                    <button class="btn-pin-video-to-showcase rounded-pill btn btn-light" onclick="pinToMainScreen('{{request.user.username}}')"><i class="fa-solid fa-thumbtack"></i></button>
+                    {% if is_host %}
+                        <button class="btn-toggle-video-lock ms-2 rounded-pill btn btn-light"><i class="fa-solid fa-video"></i></button>
+                        <button class="btn-toggle-audio-lock ms-2 rounded-pill btn btn-light"><i class="fa-solid fa-microphone"></i></button>
+                    {% endif %}
                 </div>
             </div>
         </div>
-
-        <audio class="sound-effect" src="{% static 'sounds/new-chat-message.mp3' %}" id="chat-sound"></audio>
-        <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
-        <audio class="sound-effect" src="{% static 'sounds/peer-connection-opened.mp3' %}" id="new-connection"></audio>
-        <!-- Sound effects for new participant and chat obtained from https://zapslat.com -->
+        <div id="toolbar" class="bg-dark btn-group border rounded-0">
+            <button id="btn-toggle-audio" class="rounded-0 btn btn-light"><i class="fa-solid fa-microphone-slash me-2"></i>Mute</button>
+            <button id="btn-toggle-video" class="rounded-0 btn btn-light"><i class="fa-solid fa-video-slash me-2"></i>Video Off</button>
+            <button id="btn-share-screen" class="rounded-0 btn btn-light"><i class="fa-solid fa-display me-2"></i>Share Screen</button>
+            <button id="btn-record-screen" class="rounded-0 btn btn-light"><i class="fa-solid fa-record-vinyl me-2"></i>Record Screen</button>
+            <a href="/" id="btn-exit-call" class="rounded-0 btn btn-light"><i class="fa-solid fa-phone-slash me-2"></i>Leave Call</a>
+        </div>
+    </div>
+    <div id="right-panel" class="bg-light">
+        {% if is_host %}
+        <div class="accordion" id="waiting_room_list">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed" id="waiting-users-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"
+                        aria-expanded="true" aria-controls="collapseOne" onclick="this.classList.remove('bg-warning');">
+                        waiting Room
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse w-100" aria-labelledby="headingOne"
+                    data-bs-parent="#waiting_room_list">
+                    <div class="accordion-body" id="waiting-users" style="height: 100vh;">
+                        <div id="tools" class="btn-group w-100 bg-light mb-3">
+                            <button type="button" onclick="acceptAllWaitingUsers()" class="btn btn-success rounded-0 btn-sm">Accept All</button>
+                            <button type="button" onclick="rejectAllWaitingUsers()" class="btn btn-danger rounded-0 btn-sm">Reject All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div id="chat" class="p-3 border">
+            <div id="messages">
+                <div class="list-group-item list-group-item-action bg-white p-3 mb-3" aria-current="true">
+                    <div class="d-flex w-100 justify-content-between mb-0">
+                        <p class="m-0 fw-bold">{{ request.user.username }}</p>
+                        <small>03:01 PM</small>
+                    </div>
+                    <small class="mb-1">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Placeat magnam ad iste minus nesciunt autem laudantium quia vitae repudiandae expedita itaque dolorum culpa sapiente accusamus, eligendi eos doloremque, adipisci modi voluptatem odio praesentium consectetur, vel veritatis laboriosam! Cupiditate, nemo, accusantium laudantium quos veniam non quaerat vel quidem deserunt cum maxime.</small>
+                </div>
+            </div>
+            <div class="chat-tools w-100 d-flex">
+                <input id="msg" class="w-100 form-control rounded-0">
+                <button id="btn-send-msg" class="btn btn-success rounded-0"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
     </div>
 </div>
+
+<audio class="sound-effect" src="{% static 'sounds/new-chat-message.mp3' %}" id="chat-sound"></audio>
+<audio class="sound-effect" src="{% static 'sounds/peer-connection-opened.mp3' %}" id="new-connection"></audio>
 <script src="https://www.WebRTC-Experiment.com/RecordRTC.js"></script>
 <script type="text/javascript">
     let username = '{{request.user.username}}';
     let roomCode = "{{ room_code }}";
-    let isHost = "{{is_host}}";
+    let isHost = "{{is_host}}" == 'True';
 </script>
+{% if is_host %}
+<script type="text/javascript">
+    let waitingRooms = '{{ waiting_room }}' == "True";
+    let limit = Number("{{ limit }}");
+</script>
+{% endif %}
 <script type="text/javascript" src="{% static 'js/peer.js' %}"></script>
 {% endblock %}
 {% block footer_block %}
-<footer>
-    <p class="font-weight-bold" style="text-align: center;">Sound effects for new participant and chat obtained from
-        https://zapslat.com</p>
-</footer>
 {% endblock %}

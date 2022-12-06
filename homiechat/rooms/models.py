@@ -90,7 +90,9 @@ class User(AbstractBaseUser):
 class Room(models.Model):
     code = models.CharField(max_length=44, unique=True)
     name = models.CharField(max_length=40, null=True, blank=True, default=None)
+    description = models.TextField(blank = True)
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
+    
 
 class Video(models.Model):
     video_file = models.FileField(upload_to='room_videos')

@@ -1,6 +1,8 @@
-console.log(new Date().toLocaleString().replace(",","").replace("/", "-").replace(":", "-"));
+document.getElementById("navbar").remove();
+document.getElementById("body-container").classList.remove("p-3");
+document.getElementById("body-container").classList.remove("container");
 
-// Nap peer usernames to corresponding RTCPeerConnections
+// Map peer usernames to corresponding RTCPeerConnections
 let mapPeers = {};
 
 // Nap peers that stream own screen to remote peers
@@ -11,12 +13,17 @@ let screenShared = false;
 
 // Local video element
 const localVideo = document.querySelector('#local-video');
+let mainScreenVideo = document.getElementById("main-screen-video");
+let mainScreenUsername = '';
 
 // Button to start or stop screen sharing
 let btnShareScreen = document.querySelector('#btn-share-screen');
 
 // Local video stream
 let localStream = new MediaStream();
+
+// Map users to their video stream
+let userStreamMapping = {};
 
 // Local screen stream
 let localDisplayStream = new MediaStream();
@@ -43,13 +50,14 @@ let recorder;
 let recording = false;
 
 // Chat
-let chat = document.querySelector("#message-list");
+let chatContainer = document.querySelector("#chat");
+let chat = document.querySelector("#messages");
+// chatContainer.style.display = "none";
 
 let loc = window.location;
 let wsStart = loc.protocol == 'https:' ? 'wss://' : 'ws://';
 let endPoint = wsStart + loc.host + loc.pathname;
 let webSocket;
-let btnJoin = document.querySelector('#btn-join');
 
 function kickUser(username) {
     sendSignal('kick-user', {
@@ -57,14 +65,34 @@ function kickUser(username) {
     });
 }
 
-function muteUserVideo(username) {
+function muteUserVideo(element, username) {
+    element.onclick = () => unmuteUserVideo(element, username);
+    element.innerHTML = `<i class="fa-solid fa-video"></i>`;
     sendSignal('mute-user-video', {
         "target": username
     });
 }
 
-function muteUserAudio(username) {
+function muteUserAudio(element, username) {
+    element.onclick = () => unmuteUserAudio(element, username);
+    element.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
     sendSignal('mute-user-audio', {
+        "target": username
+    });
+}
+
+function unmuteUserVideo(element, username) {
+    element.onclick = () => muteUserVideo(element, username);
+    element.innerHTML = `<i class="fa-solid fa-video-slash"></i>`;
+    sendSignal('unmute-user-video', {
+        "target": username
+    });
+}
+
+function unmuteUserAudio(element, username) {
+    element.onclick = () => muteUserAudio(element, username);
+    element.innerHTML = `<i class="fa-solid fa-microphone-slash"></i>`;
+    sendSignal('unmute-user-audio', {
         "target": username
     });
 }
@@ -82,11 +110,7 @@ function openRoom() {
 }
 
 // Join room (initiate websocket connection) on button click
-btnJoin.onclick = () => {
-    // Disable the join button
-    btnJoin.disabled = true;
-    btnJoin.style.visibility = 'hidden';
-
+function joinRoom() {
     // Configure the websocket connection
     webSocket = new WebSocket(endPoint);    
 
@@ -94,10 +118,12 @@ btnJoin.onclick = () => {
     webSocket.onopen = function(e) {
         console.log('Connection opened', e);
 
-        // Notify other peers about user's joining
-        sendSignal('new-peer', {
-            'local_screen_sharing': false,
-        });
+        if (isHost) {
+            sendSignal('room-config', {
+                'waiting-rooms': waitingRooms,
+                'limit': limit
+            });
+        }
     }
     
     // When the connection recieves a message
@@ -118,6 +144,56 @@ btnJoin.onclick = () => {
     messageInput.disabled = false;
 }
 
+joinRoom();
+
+function waitingUserHTML(username) {
+    return `<div class="waiting-user d-flex align-items-center justify-content-between bg-light p-2">
+        <div>
+            <p class="m-0">${username}</p>
+        </div>
+        <div class="btn-group">
+            <button type="button" onclick="acceptWaitingUser(this, '${username}')" class="btn accept-button btn-sm btn-success"><i class="fa-solid fa-check"></i></button>
+            <button type="button" onclick="rejectWaitingUser(this, '${username}')" class="btn reject-button btn-sm btn-danger"><i class="fa-solid fa-xmark me-1 ms-1"></i></button>
+        </div>
+    </div>`;
+}
+
+function acceptWaitingUser(element, username) {
+    if (isHost) {
+        sendSignal('accept-waiting-user', {
+            'user': username
+        });
+        element.closest(".waiting-user").remove();
+    }
+}
+
+function rejectWaitingUser(element, username) {
+    if (isHost) {
+        sendSignal('reject-waiting-user', {
+            'user': username
+        });
+        element.closest(".waiting-user").remove();
+    }
+}
+
+function acceptAllWaitingUsers() {
+    if (isHost) {
+        let wuNodes = document.getElementById("waiting-users").querySelectorAll(".waiting-user");
+        wuNodes.forEach((item, index) => {
+            item.querySelector(".accept-button").click();
+        })
+    }
+}
+
+function rejectAllWaitingUsers() {
+    if (isHost) {
+        let wuNodes = document.getElementById("waiting-users").querySelectorAll(".waiting-user");
+        wuNodes.forEach((item, index) => {
+            item.querySelector(".reject-button").click();
+        })
+    }
+}
+
 /**
  * Message handler for the web socket
  * @param {Event} event Event object
@@ -126,8 +202,48 @@ btnJoin.onclick = () => {
 function webSocketOnMessage(event) {
     let parsedData = JSON.parse(event.data);
     let action = parsedData['action'];
-    let peerUsername = parsedData['peer'];
+    let message = parsedData['message'];
+    let peerUsername = parsedData['peer']; // user message meant for
+    
     console.log(parsedData)
+    
+    if (action == "start-setup") {
+        // Notify other peers about user's joining
+        sendSignal('new-peer', {
+            'local_screen_sharing': false,
+        });
+        setUp();
+    } else if (action == "waiting-user") {
+        let wu = document.getElementById("waiting-users");
+        wu.insertAdjacentHTML("beforeend", waitingUserHTML(message["peerUsername"]));
+        let wuButton = document.getElementById("waiting-users-button");
+
+        if (!wu.closest("#collapseOne").classList.contains("show")) {
+            wuButton.classList.add("bg-warning");
+        }
+    } else if (action == "kick-user") { // Case: Kicked out by the host
+        window.location = "/"
+        return;
+    } else if (action == 'mute-video') { // Case: Host muted your video
+        videoLockedByHost = true;
+        btnToggleVideo.disabled = true;
+        videoTracks[0].enabled = false;
+        btnToggleVideo.innerHTML = 'Video On';
+    } else if (action == 'mute-audio') { // Case: Host muted your audio
+        audioLockedByHost = true;
+        btnToggleAudio.disabled = true;
+        audioTracks[0].enabled = false;
+        btnToggleAudio.innerHTML = 'Unmute';
+    } else if (action == 'unmute-video') { // Case: Host unmuted your video
+        videoLockedByHost = false;
+        btnToggleVideo.disabled = false;
+    } else if (action == 'unmute-audio') { // Case: Host unmuted your audio
+        audioLockedByHost = false;
+        btnToggleAudio.disabled = false;
+    } else if (action == 'toggle-room-entry') { // Case: Host unmuted your audio
+        audioLockedByHost = false;
+        btnToggleAudio.disabled = false;
+    }
 
     // Ignore all messages from oneself
     if (peerUsername == username)
@@ -150,46 +266,6 @@ function webSocketOnMessage(event) {
         }
         
         return;
-    }
-
-    // Case: Kicked out by the host
-    if (action == "kick-user") {
-        window.location = "/"
-        return;
-    }
-
-    // Case: Host muted your video
-    if (action == 'mute-video') {
-        videoLockedByHost = true;
-        btnToggleVideo.disabled = true;
-        videoTracks[0].enabled = false;
-        btnToggleVideo.innerHTML = 'Video On';
-    }
-
-    // Case: Host muted your audio
-    if (action == 'mute-audio') {
-        audioLockedByHost = true;
-        btnToggleAudio.disabled = true;
-        audioTracks[0].enabled = false;
-        btnToggleAudio.innerHTML = 'Unmute';
-    }
-
-    // Case: Host unmuted your video
-    if (action == 'unmute-video') {
-        videoLockedByHost = false;
-        btnToggleVideo.disabled = false;
-    }
-
-    // Case: Host unmuted your audio
-    if (action == 'unmute-audio') {
-        audioLockedByHost = false;
-        btnToggleAudio.disabled = false;
-    }
-
-    // Case: Host unmuted your audio
-    if (action == 'toggle-room-entry') {
-        audioLockedByHost = false;
-        btnToggleAudio.disabled = false;
     }
 
     // remote_screen_sharing from the remote peer
@@ -232,16 +308,30 @@ messageInput.addEventListener('keyup', function(event) {
 
 btnSendMsg.onclick = btnSendMsgOnClick;
 
+function createMessageHTML(username, message) {
+    return `<div class="list-group-item list-group-item-action bg-white p-3 mb-3" aria-current="true">
+        <div class="d-flex w-100 justify-content-between mb-0">
+            <p class="m-0 fw-bold">${username}</p>
+            <small>${new Date().toLocaleTimeString()}</small>
+        </div>
+        <small class="mb-1">${message}</small>
+    </div>`;
+}
+
+function scrollToBottom(element) {
+    element.scroll({ top: element.scrollHeight, behavior: 'smooth' });
+}
+
 function btnSendMsgOnClick() {
     let message = messageInput.value;
-    let li = document.createElement("li");
-    li.appendChild(document.createTextNode("You: " + message));
-    chat.appendChild(li);
+    let messageHTML = createMessageHTML("You", message);
+    chat.insertAdjacentHTML("beforeend", messageHTML);
+    scrollToBottom(chat);
     let dataChannels = getDataChannels();
 
     // Send to all data channels
     for (index in dataChannels) {
-        dataChannels[index].send(username + ': ' + message);
+        dataChannels[index].send(createMessageHTML(username, message));
     }
     
     // Clear the message field
@@ -249,8 +339,12 @@ function btnSendMsgOnClick() {
 }
 
 const constraints = {
-    'video': true,
-    'audio': true
+    video: {
+        width: 1280,
+        height: 720,
+        facingMode: "user"
+    },
+    audio: true
 }
 
 const iceConfiguration = {
@@ -263,19 +357,24 @@ const iceConfiguration = {
     ]
 };
 
-userMedia = navigator.mediaDevices.getUserMedia(constraints)
+function setUp() {
+    userMedia = navigator.mediaDevices.getUserMedia(constraints)
     .then(stream => {
         localStream = stream;
         localVideo.srcObject = localStream;
         localVideo.muted = true;
+        userStreamMapping[username] = stream;
+        mainScreenUsername = username;
+        mainScreenVideo.srcObject = localStream;
+        mainScreenVideo.muted = true;
         window.stream = stream; // make variable available to browser console
 
         audioTracks = stream.getAudioTracks();
         videoTracks = stream.getVideoTracks();
 
         // Mute audio and video by default
-        audioTracks[0].enabled = false;
-        videoTracks[0].enabled = false;
+        audioTracks[0].enabled = true;
+        videoTracks[0].enabled = true;
 
         // Handler for audio toggle button
         btnToggleAudio.onclick = function() {
@@ -285,9 +384,9 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
             audioTracks[0].enabled = !audioTracks[0].enabled;
 
             if (audioTracks[0].enabled) {
-                btnToggleAudio.innerHTML = 'Mute';
+                btnToggleAudio.innerHTML = '<i class="fa-solid fa-microphone-slash me-2"></i>Mute';
             } else {
-                btnToggleAudio.innerHTML = 'Unmute';
+                btnToggleAudio.innerHTML = '<i class="fa-solid fa-microphone me-2"></i>Unmute';
             }
         };
 
@@ -299,9 +398,9 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
             videoTracks[0].enabled = !videoTracks[0].enabled;
 
             if (videoTracks[0].enabled) {
-                btnToggleVideo.innerHTML = 'Video Off';
+                btnToggleVideo.innerHTML = '<i class="fa-solid fa-video-slash me-2"></i>Video Off';
             } else {
-                btnToggleVideo.innerHTML = 'Video On';
+                btnToggleVideo.innerHTML = '<i class="fa-solid fa-video me-2"></i>Video On';
             }
         };
     })
@@ -314,6 +413,7 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
                 // set to own video
                 // if screen already shared
                 localVideo.srcObject = localStream;
+                mainScreenVideo.srcObject = localStream;
                 btnShareScreen.innerHTML = 'Share Screen';
 
                 // Get the screen sharing video element and remove your stream
@@ -389,6 +489,7 @@ userMedia = navigator.mediaDevices.getUserMedia(constraints)
     .catch(error => {
         console.error('Error occurred while accessing media devices.', error);
     });
+}
 
 function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, receiverChannelName){
     let peer = new RTCPeerConnection(null);
@@ -403,9 +504,8 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
 
     if (!localScreenSharing && !remoteScreenSharing) { // Case: When no one is sharing screen in the room    
         dc.onmessage = dcOnMessage;
-
         remoteVideo = createVideo(peerUsername);
-        setOnTrack(peer, remoteVideo);
+        setOnTrack(peerUsername, peer, remoteVideo);
         mapPeers[peerUsername] = [peer, dc];
 
         peer.oniceconnectionstatechange = () => {
@@ -419,6 +519,7 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
                 }
 
                 removeVideo(remoteVideo);
+                pinToMainScreen(username);
             }
         };
     } else if (localScreenSharing && !remoteScreenSharing) { // Case: When you're sharing your screen
@@ -427,7 +528,7 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
         };
 
         remoteVideo = createVideo(peerUsername + '-screen');
-        setOnTrack(peer, remoteVideo);
+        setOnTrack(peerUsername, peer, remoteVideo);
         mapPeers[peerUsername + '-screen-share'] = [peer, dc];
 
         peer.oniceconnectionstatechange = () => {
@@ -441,6 +542,7 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
                 }
 
                 removeVideo(remoteVideo);
+                pinToMainScreen(username);
             }
         };
     } else { // Case: Offerer itself is sharing his/her screen
@@ -493,7 +595,7 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
         let remoteVideo = createVideo(peerUsername);
 
         // Add tracks to remote video
-        setOnTrack(peer, remoteVideo);
+        setOnTrack(peerUsername, peer, remoteVideo);
 
         peer.ondatachannel = e => {
             peer.dc = e.channel;
@@ -518,6 +620,7 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
                 }
 
                 removeVideo(remoteVideo);
+                pinToMainScreen(username);
             }
         };
     } else if (localScreenSharing && !remoteScreenSharing) { // Case: When you're sharing your screen
@@ -545,7 +648,7 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
         }
     } else { // Case: Offerer is sharing his/her screen
         let remoteVideo = createVideo(peerUsername + '-screen');
-        setOnTrack(peer, remoteVideo);
+        setOnTrack(peerUsername, peer, remoteVideo);
         peer.ondatachannel = e => {
             peer.dc = e.channel;
             peer.dc.onmessage = event => {
@@ -569,6 +672,7 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
                 }
 
                 removeVideo(remoteVideo);
+                pinToMainScreen(username);
             }
         };
     }
@@ -627,10 +731,8 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
 
 function dcOnMessage(event) {
     let message = event.data;
-    
-    let li = document.createElement("li");
-    li.appendChild(document.createTextNode(message));
-    chat.appendChild(li);
+    chat.insertAdjacentHTML("beforeend", message);
+    scrollToBottom(chat);
 
     let chatSound = document.querySelector('#chat-sound');
     chatSound.play();
@@ -658,23 +760,44 @@ function getPeers(peerStorageObj) {
     return peers;
 }
 
+function pinToMainScreen(username) {
+    mainScreenUsername = username;
+    mainScreenVideo.srcObject = userStreamMapping[username];
+}
+
+function createVideoOverlay(username) {
+    let html = `<div class="video-overlay">
+    <button class="btn-pin-video-to-showcase rounded-pill btn btn-light" onclick="pinToMainScreen('${username}')"><i class="fa-solid fa-thumbtack"></i></button>`;
+
+    if (isHost)
+        html += `<button class="btn-toggle-video-lock ms-2 rounded-pill btn btn-light" onclick="muteUserVideo(this, '${username}')"><i class="fa-solid fa-video-slash"></i></button>
+        <button class="btn-toggle-audio-lock ms-2 rounded-pill btn btn-light"  onclick="muteUserAudio(this, '${username}')"><i class="fa-solid fa-microphone-slash"></i></button>`;
+
+    html += `</div>`;
+    return html;
+}
+
 function createVideo(peerUsername) {
-    let videoContainer = document.querySelector('#video-container');
+    let videoContainer = document.querySelector('#participants');
 
     let remoteVideo = document.createElement('video');
     remoteVideo.id = peerUsername + '-video';
+    remoteVideo.className = "participant-video";
     remoteVideo.autoplay = true;
     remoteVideo.playsinline = true;
 
     let videoWrapper = document.createElement('div');
     videoContainer.appendChild(videoWrapper);
     videoWrapper.appendChild(remoteVideo);
+    videoWrapper.insertAdjacentHTML("beforeend", createVideoOverlay(peerUsername));
+    videoWrapper.className = "participant-video-container";
     return remoteVideo;
 }
 
-function setOnTrack(peer, remoteVideo){
+function setOnTrack(peerUsername, peer, remoteVideo) {
     let remoteStream = new MediaStream();
     remoteVideo.srcObject = remoteStream;
+    userStreamMapping[peerUsername] = remoteStream;
     peer.addEventListener('track', async (event) => {
         remoteStream.addTrack(event.track, remoteStream);
     });

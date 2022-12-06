@@ -1,32 +1,106 @@
-.form-wrapper{
-    display: block;
-    text-align: center;
+/* Panels */
+#main-container {
+    display: flex;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
 }
 
-form
-{
-    display: inline-block;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: left;
+#left-panel {
+    width: 75%;
 }
 
-.video-grid-container{
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+#right-panel {
+    width: 25%;
+}
+
+/* Main Screen */
+#main-screen {
+    height: 70%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#main-screen-video {
+    height: 100%;
     background-color: black;
 }
 
-.main-grid-container{
-    display: grid;
-    grid-template-columns: 60% 20%;
+/* Participants */
+#participants {
+    display: flex;
+    height: 25%;
+    position: relative;
+    /* overflow: auto; */
+    overflow: hidden;
+    overflow-x: auto;
 }
 
-video {
-    border-radius: 25%;
+/* Toolbar */
+#toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 5%;
+    position: relative;
+}
+
+#toolbar button {
+    height: 100%;
+    border-radius: 0 !important;
+}
+
+#toolbar a {
+    height: 100%;
+}
+
+/* Local Video */
+#local-video-container, .participant-video-container {
+    position: relative;
+}
+
+#local-video-container:hover, .participant-video-container:hover .video-overlay {
+    visibility: visible;
+    opacity: 1;
+}
+
+#local-video, .participant-video {
+    /* /width: 100%; */
+    /* position: absolute; */
+    z-index: 2 !important;
+    height: 100%;
     background-color: black;
 }
 
-.sound-effect{
+.sound-effect {
     visibility: hidden;
+}
+
+.video-overlay {
+    position: absolute;
+    display: flex;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    z-index: 5 !important;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.25s ease-in-out;
+}
+
+/* Chat */
+#chat {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
+}
+
+#messages {
+    overflow: auto;
+}
+
+#chat-tools {
+
 }
