@@ -31,10 +31,17 @@ Follow the steps ahead to set up and run the project.
 * Video Streaming
 * Record Screen
 * Chatting
-* Share Screen
+* Roll-based access
+    * Host
+        * Manage meeting credentials and settings (Vaibhav)
+        * Mute and unmute participants audio (Vaibhav)
+        * Mute and unmute participants video (Vaibhav)
+        * Kick participants out of the meeting (Vaibhav)
+* Update project details (Vaibhav)
 
 ## Features: TODO
 * Waiting Rooms (TBD)
+* Share Screen
 * Global and private messages (TBD)
 * Roll-based access
     * General
@@ -42,13 +49,8 @@ Follow the steps ahead to set up and run the project.
         * Attach files to messages (optional)
         * Share meeting details (TBD)
     * Host
-        * Manage meeting credentials and settings (TBD)
-        * Mute and unmute participants audio (TBD)
-        * Mute and unmute participants video (TBD)
-        * Kick participants out of the meeting (TBD)
-        * Open and close entry to the meeting (TBD)
+        * Open and close entry to the meeting (Vaibhav)
 * Update UI (TBD)
-* Update project details (Vaibhav)
 * Extend support to users over different internet connections (TBD)
 * Configure Redis (optional)
 * Host (optional)
