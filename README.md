@@ -38,9 +38,9 @@ Follow the steps ahead to set up and run the project.
         * Mute and unmute participants video (Vaibhav)
         * Kick participants out of the meeting (Vaibhav)
 * Update project details (Vaibhav)
+* Waiting Rooms (Vaibhav)
 
 ## Features: TODO
-* Waiting Rooms (TBD)
 * Share Screen
 * Global and private messages (TBD)
 * Roll-based access
