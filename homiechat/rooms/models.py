@@ -93,7 +93,6 @@ class Room(models.Model):
     description = models.TextField(blank = True)
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
     
-
 class Video(models.Model):
     video_file = models.FileField(upload_to='room_videos')
     room = models.ForeignKey(to=Room, on_delete=models.CASCADE)

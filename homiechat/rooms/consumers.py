@@ -40,6 +40,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             else:
                 await self.close()
                 return
+
         config = rooms[room_code]["config"]
 
         if self.room_owner != user.username:
@@ -61,6 +62,38 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
         rooms[room_code]["config"]["joined"] += 1
+
+        if self.room_owner != user.username:
+            if not config["open"]:
+                await self.channel_layer.send(
+                    self.channel_name,
+                    {
+                        'type': 'send.sdp',
+                        'receive_dict': {
+                            "peer": user.username,
+                            "action": "no-entry",
+                            "message": "Host has disabled entry to the room"
+                        },
+                    }
+                ) 
+                await self.close()
+                return
+                
+            if config["limit"] <= config["joined"]:
+                await self.channel_layer.send(
+                    self.channel_name,
+                    {
+                        'type': 'send.sdp',
+                        'receive_dict': {
+                            "peer": user.username,
+                            "action": "limit-reached",
+                            "message": "Room limit reached"
+                        },
+                    }
+                ) 
+                await self.close()
+                return
+                
         await self.accept()
 
         # If waiting rooms enabled, send a message to the host
@@ -261,6 +294,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'receive_dict': receive_dict,
                 }
             )
+        elif action == "raise-hand":
+            for key, value in rooms[self.room_group_name]["members"].items():
+                await self.channel_layer.send(
+                    value[1],
+                    {
+                        'type': 'send.sdp',
+                        'receive_dict': {
+                            "peer": key,
+                            "action": "hand-raised",
+                            "message": f"{peer_username} raised their hand."
+                        },
+                    }
+                )
         elif action == "new-peer":
             receive_dict['message']['receiver_channel_name'] = self.channel_name
 

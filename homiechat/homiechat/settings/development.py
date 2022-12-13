@@ -3,6 +3,8 @@ from .base import *
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ["https://ac7f-103-25-231-102.in.ngrok.io"]
+CSRF_TRUSTED_ORIGINS = ["https://a907-180-151-15-242.in.ngrok.io"]
 
 DATABASES = {
     'default': {

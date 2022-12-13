@@ -33,23 +33,23 @@ Follow the steps ahead to set up and run the project.
 * Chatting
 * Roll-based access
     * Host
-        * Manage meeting credentials and settings (Vaibhav)
-        * Mute and unmute participants audio (Vaibhav)
-        * Mute and unmute participants video (Vaibhav)
-        * Kick participants out of the meeting (Vaibhav)
-* Update project details (Vaibhav)
-* Waiting Rooms (Vaibhav)
+        * Open and close entry to the meeting
+        * Manage meeting credentials and settings
+        * Mute and unmute participants audio
+        * Mute and unmute participants video
+        * Kick participants out of the meeting
+* Update project details
+* Waiting Rooms
+* Raise hand
+* Global and private messages
 
 ## Features: TODO
 * Share Screen
-* Global and private messages (TBD)
 * Roll-based access
     * General
         * Attach files to the meeting (TBD)
         * Attach files to messages (optional)
         * Share meeting details (TBD)
-    * Host
-        * Open and close entry to the meeting (Vaibhav)
 * Update UI (TBD)
 * Extend support to users over different internet connections (TBD)
 * Configure Redis (optional)

@@ -5,6 +5,9 @@
 {% block content %}
 
 <div id="main-container" class="bg-dark">
+    <div id="toasts">
+        
+    </div>
     <div id="left-panel">
         <div id="main-screen" class="">
             <video id="main-screen-video" autoplay playsinline></video>
@@ -14,18 +17,18 @@
                 <video id="local-video" class="participant-video" autoplay playsinline></video>
                 <div class="video-overlay">
                     <button class="btn-pin-video-to-showcase rounded-pill btn btn-light" onclick="pinToMainScreen('{{request.user.username}}')"><i class="fa-solid fa-thumbtack"></i></button>
-                    {% if is_host %}
-                        <button class="btn-toggle-video-lock ms-2 rounded-pill btn btn-light"><i class="fa-solid fa-video"></i></button>
-                        <button class="btn-toggle-audio-lock ms-2 rounded-pill btn btn-light"><i class="fa-solid fa-microphone"></i></button>
-                    {% endif %}
                 </div>
             </div>
         </div>
         <div id="toolbar" class="bg-dark btn-group border rounded-0">
             <button id="btn-toggle-audio" class="rounded-0 btn btn-light"><i class="fa-solid fa-microphone-slash me-2"></i>Mute</button>
             <button id="btn-toggle-video" class="rounded-0 btn btn-light"><i class="fa-solid fa-video-slash me-2"></i>Video Off</button>
-            <button id="btn-share-screen" class="rounded-0 btn btn-light"><i class="fa-solid fa-display me-2"></i>Share Screen</button>
+            <!-- <button id="btn-share-screen" class="rounded-0 btn btn-light"><i class="fa-solid fa-display me-2"></i>Share Screen</button> -->
             <button id="btn-record-screen" class="rounded-0 btn btn-light"><i class="fa-solid fa-record-vinyl me-2"></i>Record Screen</button>
+            <button id="btn-raise-hand" class="rounded-0 btn btn-light" onclick="sendRaiseHand()"><i class="fa-solid fa-hand me-2"></i>Raise Hand</button>
+            {% if is_host %}
+            <button id="btn-toggle-room-visibility" class="rounded-0 btn btn-light" onclick="changeRoomVisibility(this);"><i class="fa-solid fa-door-closed me-2"></i>Close Room</button>
+            {% endif %}
             <a href="/" id="btn-exit-call" class="rounded-0 btn btn-light"><i class="fa-solid fa-phone-slash me-2"></i>Leave Call</a>
         </div>
     </div>
@@ -36,7 +39,7 @@
                 <h2 class="accordion-header" id="headingOne">
                     <button class="accordion-button collapsed" id="waiting-users-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne"
                         aria-expanded="true" aria-controls="collapseOne" onclick="this.classList.remove('bg-warning');">
-                        waiting Room
+                        Waiting Room
                     </button>
                 </h2>
                 <div id="collapseOne" class="accordion-collapse collapse w-100" aria-labelledby="headingOne"
@@ -51,18 +54,16 @@
             </div>
         </div>
         {% endif %}
-        <div id="chat" class="p-3 border">
-            <div id="messages">
-                <div class="list-group-item list-group-item-action bg-white p-3 mb-3" aria-current="true">
-                    <div class="d-flex w-100 justify-content-between mb-0">
-                        <p class="m-0 fw-bold">{{ request.user.username }}</p>
-                        <small>03:01 PM</small>
-                    </div>
-                    <small class="mb-1">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Placeat magnam ad iste minus nesciunt autem laudantium quia vitae repudiandae expedita itaque dolorum culpa sapiente accusamus, eligendi eos doloremque, adipisci modi voluptatem odio praesentium consectetur, vel veritatis laboriosam! Cupiditate, nemo, accusantium laudantium quos veniam non quaerat vel quidem deserunt cum maxime.</small>
-                </div>
-            </div>
+        {% if is_host %}
+        <div id="chat" class="p-3 border chat-2">
+        {% else %}
+        <div id="chat" class="p-3 border chat-1">
+        {% endif %}
+            <div id="messages"></div>
             <div class="chat-tools w-100 d-flex">
-                <input id="msg" class="w-100 form-control rounded-0">
+                <div id="message-name-suggestions" class="bg-white border">
+                </div>
+                <input id="msg" class="w-100 form-control rounded-0" placeholder="Write a message here">
                 <button id="btn-send-msg" class="btn btn-success rounded-0"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>

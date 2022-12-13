@@ -15,7 +15,7 @@ from .utils import generate_room_code
 from django.contrib import messages
 
 @is_authenticated
-def user_creation_view(request):
+def home(request):
     context = {}
 
     if request.method == 'POST':
@@ -27,14 +27,14 @@ def user_creation_view(request):
             raw_password = usercreationform.cleaned_data.get('password1')
             authenticated_account = authenticate(email=email, password=raw_password)
             login(request, authenticated_account)
-            return redirect('user_detail_view', pk=user.id)
+            return redirect('dashboard')
         else:
             context['form'] = usercreationform
     elif request.method == "GET":
         usercreationform = CreateUserForm()
         context['form'] = usercreationform
 
-    return render(request, 'rooms/user_creation_view.html', context=context)
+    return render(request, 'rooms/home.html', context=context)
 
 @is_authenticated
 def login_view(request):
@@ -51,44 +51,39 @@ def login_view(request):
 
             if user:
                 login(request, user)
-                return redirect('user_detail_view', pk=user.id)
+                return redirect('dashboard')
     else:
         form = UserAuthenticationForm()
 
     context['form'] = form
-    return render(request, 'rooms/login_view.html', context)
+    return render(request, 'rooms/login.html', context)
 
 @login_required
 def logout_view(request):
     logout(request)
-    return redirect('user_creation_view')
+    return redirect('home')
 
-class UserDetailView(LoginRequiredMixin, DetailView):
-    model = User
-    template_name = 'rooms/user_detail_view.html'
+@login_required
+def dashboard(request):
+    context = {}
+    user = request.user
+    rooms = Room.objects.filter(user = user)
+    context['rooms'] = rooms
+    context['user'] = user
 
-    def get(self, request, pk):
-        context = {}
-        user = User.objects.get(id=pk)
-        display_btn_update = False
+    if request.method == "POST":
+        room_code = request.POST.get('room-input')
+        print("Room Code:", room_code)
+        context['warning'] = True
+        
+        if room_code != None:
+            room_exists = Room.objects.filter(code=room_code).exists()
 
-        if request.user == user:
-            display_btn_update = True
+            if room_exists:
+                context['warning'] = False
+                return redirect('room', room_code=room_code)
 
-        context['user'] = user
-        context['display_btn_update'] = display_btn_update
-        return render(request, self.template_name, context)
-
-class RoomListView(LoginRequiredMixin, ListView):
-    model = Room
-    template_name = 'rooms/room_list_view.html'
-
-    def get(self, request):
-        context = {}
-        rooms = Room.objects.filter(user=request.user)
-        context['rooms'] = rooms
-        context['json_rooms'] = rooms
-        return render(request, self.template_name, context)
+    return render(request, 'rooms/dashboard.html', context)
 
 @login_required
 def user_update_view(request):
@@ -100,12 +95,14 @@ def user_update_view(request):
 
         if form.is_valid():
             user = form.save()
-            return redirect('user_detail_view', pk=request.user.id)
+            form = UpdateUserForm(instance=user)
+            context['form'] = form
+            messages.success(request, "Profile updated successfully!")
+            return render(request, 'rooms/user_update_view.html', context=context)
         else:
             context['form'] = form
     else: # GET request
         form = UpdateUserForm(instance=user)
-
         context['form'] = form
 
     return render(request, 'rooms/user_update_view.html', context=context)
@@ -128,7 +125,8 @@ def room_creation_view(request):
             room.user = request.user
             room.code = generate_room_code(new_id)
             room.save()
-            return redirect('room_list_view')
+            messages.success(request, "Room created successfully!")
+            return redirect('dashboard')
         else:
             context['form'] = roomcreationform
     elif request.method == "GET":
@@ -143,7 +141,7 @@ def prepare_chat_view(request):
     return render(request, 'rooms/prepare_chat_view.html', context=context)
 
 @login_required
-def join_chat_view(request, room_code):
+def room(request, room_code):
     context = {}
     room = Room.objects.get(code = room_code)
     context['room_code'] = room_code
@@ -156,7 +154,7 @@ def join_chat_view(request, room_code):
         context["waiting_room"] = request.POST.get("waiting_room") == "true"
         context["limit"] = int(request.POST.get("limit"))
     
-    return render(request, 'rooms/join_chat_view.html', context=context)
+    return render(request, 'rooms/room.html', context=context)
 
 @login_required
 def select_room_view(request):
@@ -171,7 +169,49 @@ def select_room_view(request):
     room_exists = Room.objects.filter(code=room_code).exists()
 
     if room_exists:
-        return redirect('join_chat_view', room_code=room_code)
+        return redirect('room', room_code=room_code)
     
     context['warning'] = True
     return render(request, 'rooms/select_room_view.html', context)
+
+@login_required
+def delete_room(request, room_code):
+    if room_code:
+        room_exists = Room.objects.filter(code=room_code)
+
+        if room_exists:
+            room = room_exists.first()
+
+            if room.user == request.user:
+                room.delete()
+                messages.success(request, "Room deleted successfully.")
+            else:
+                messages.error(request, "Room doesn't belong to you.")
+        else:
+            messages.error(request, "Room doesn't exist.")
+
+    return redirect("dashboard")
+
+@login_required
+def edit_room(request, room_code):
+    if room_code:
+        room_exists = Room.objects.filter(code=room_code)
+
+        if room_exists:
+            room = room_exists.first()
+
+            if room.user == request.user:
+                print(request.POST.get("roomName"))
+                print(request.POST.get("roomCode"))
+                print(request.POST.get("roomDescription"))
+                room.name = request.POST.get("roomName")
+                room.code = request.POST.get("roomCode")
+                room.description = request.POST.get("roomDescription")
+                room.save()
+                messages.success(request, "Room updated successfully!")
+            else:
+                messages.error(request, "Room doesn't belong to you.")
+        else:
+            messages.error(request, "Room doesn't exist.")
+
+    return redirect("dashboard")

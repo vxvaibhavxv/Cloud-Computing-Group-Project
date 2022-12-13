@@ -5,7 +5,7 @@ document.getElementById("body-container").classList.remove("container");
 // Map peer usernames to corresponding RTCPeerConnections
 let mapPeers = {};
 
-// Nap peers that stream own screen to remote peers
+// Map peers that stream own screen to remote peers
 let mapScreenPeers = {};
 
 // Screen share state
@@ -16,14 +16,20 @@ const localVideo = document.querySelector('#local-video');
 let mainScreenVideo = document.getElementById("main-screen-video");
 let mainScreenUsername = '';
 
-// Button to start or stop screen sharing
-let btnShareScreen = document.querySelector('#btn-share-screen');
-
 // Local video stream
 let localStream = new MediaStream();
 
+// my username
+let myUsername = username;
+
 // Map users to their video stream
 let userStreamMapping = {};
+
+// Toasts
+let toastsContainer = document.getElementById("toasts");
+
+// Message Name Suggestions
+let messageNameSuggestionsContainer = document.getElementById("message-name-suggestions");
 
 // Local screen stream
 let localDisplayStream = new MediaStream();
@@ -63,6 +69,16 @@ function kickUser(username) {
     sendSignal('kick-user', {
         "target": username
     });
+}
+
+function changeRoomVisibility(element) {
+    if (element.innerText == "Close Room") {
+        closeRoom();
+        element.innerHTML = `<i class="fa-solid fa-door-open me-2"></i>Open Room`;
+    } else {
+        openRoom();
+        element.innerHTML = `<i class="fa-solid fa-door-closed me-2"></i>Close Room`;
+    }
 }
 
 function muteUserVideo(element, username) {
@@ -111,6 +127,7 @@ function openRoom() {
 
 // Join room (initiate websocket connection) on button click
 function joinRoom() {
+    console.log("JPining room!")
     // Configure the websocket connection
     webSocket = new WebSocket(endPoint);    
 
@@ -165,6 +182,12 @@ function acceptWaitingUser(element, username) {
         });
         element.closest(".waiting-user").remove();
     }
+}
+
+function sendRaiseHand() {
+    sendSignal('raise-hand', {
+        'user': myUsername
+    });
 }
 
 function rejectWaitingUser(element, username) {
@@ -224,6 +247,8 @@ function webSocketOnMessage(event) {
     } else if (action == "kick-user") { // Case: Kicked out by the host
         window.location = "/"
         return;
+    } else if (action == "hand-raised") { // Case: Kicked out by the host
+        handRaised(message);
     } else if (action == 'mute-video') { // Case: Host muted your video
         videoLockedByHost = true;
         btnToggleVideo.disabled = true;
@@ -246,7 +271,7 @@ function webSocketOnMessage(event) {
     }
 
     // Ignore all messages from oneself
-    if (peerUsername == username)
+    if (peerUsername == myUsername)
         return;
 
     // Indicates whether the other peer is sharing screen
@@ -306,10 +331,35 @@ messageInput.addEventListener('keyup', function(event) {
     }
 });
 
+function addSuggestionToMessageInput(element) {
+    messageInput.value = '@' + element.innerHTML + " ";
+    messageNameSuggestionsContainer.innerHTML = "";
+    messageInput.focus();
+}
+
+messageInput.addEventListener("input", function(event) {
+    messageNameSuggestionsContainer.innerHTML = "";
+
+    if (messageInput.value.startsWith("@")) {
+        let index = messageInput.value.indexOf(" ");
+        let caret = this.selectionStart;
+
+        if (caret >= 1 && (index == -1 || caret <= index)) {
+            let users = Object.keys(mapPeers);
+
+            for (let i in users) {
+                if (users[i].startsWith(messageInput.value.slice(1))) {
+                    messageNameSuggestionsContainer.innerHTML += `<div class='m-0 p-2 message-suggestion' onclick='addSuggestionToMessageInput(this)'>${users[i]}</div>`;
+                }
+            }
+        }
+    }
+});
+
 btnSendMsg.onclick = btnSendMsgOnClick;
 
-function createMessageHTML(username, message) {
-    return `<div class="list-group-item list-group-item-action bg-white p-3 mb-3" aria-current="true">
+function createMessageHTML(username, message, private = false) {
+    return `<div class="list-group-item list-group-item-action p-3 mb-3 ${private ? "bg-warning" : "bg-white"}" aria-current="true">
         <div class="d-flex w-100 justify-content-between mb-0">
             <p class="m-0 fw-bold">${username}</p>
             <small>${new Date().toLocaleTimeString()}</small>
@@ -324,14 +374,30 @@ function scrollToBottom(element) {
 
 function btnSendMsgOnClick() {
     let message = messageInput.value;
-    let messageHTML = createMessageHTML("You", message);
-    chat.insertAdjacentHTML("beforeend", messageHTML);
-    scrollToBottom(chat);
     let dataChannels = getDataChannels();
+    let messageHTML = createMessageHTML("You", message);
+    
+    if (message.startsWith("@")) {
+        let index = message.indexOf(" ");
+        messageHTML = createMessageHTML("You", message.slice(index + 1), true);
 
-    // Send to all data channels
-    for (index in dataChannels) {
-        dataChannels[index].send(createMessageHTML(username, message));
+        if (index != 1 || index != -1) {
+            let targetUsername = message.substr(1, index - 1).trim();
+            let dt = getTargetDataChannel(targetUsername);
+
+            if (dt != undefined) {
+                dt.send(createMessageHTML(myUsername, message.slice(index + 1), true));
+                chat.insertAdjacentHTML("beforeend", messageHTML);
+                scrollToBottom(chat);
+            }
+        }
+    } else { // Send to all data channels
+        for (index in dataChannels) {
+            dataChannels[index].send(createMessageHTML(myUsername, message));
+        }
+        
+        chat.insertAdjacentHTML("beforeend", messageHTML);
+        scrollToBottom(chat);
     }
     
     // Clear the message field
@@ -363,8 +429,10 @@ function setUp() {
         localStream = stream;
         localVideo.srcObject = localStream;
         localVideo.muted = true;
-        userStreamMapping[username] = stream;
-        mainScreenUsername = username;
+        myUsername = username;
+        userStreamMapping[myUsername] = stream;
+        myUsername = myUsername;
+        mainScreenUsername = myUsername;
         mainScreenVideo.srcObject = localStream;
         mainScreenVideo.muted = true;
         window.stream = stream; // make variable available to browser console
@@ -403,55 +471,6 @@ function setUp() {
                 btnToggleVideo.innerHTML = '<i class="fa-solid fa-video me-2"></i>Video On';
             }
         };
-    })
-    .then(e => {
-        btnShareScreen.onclick = event => {
-            // Case: If the screen is being shared, turn it off
-            if (screenShared) {
-                screenShared = !screenShared;
-
-                // set to own video
-                // if screen already shared
-                localVideo.srcObject = localStream;
-                mainScreenVideo.srcObject = localStream;
-                btnShareScreen.innerHTML = 'Share Screen';
-
-                // Get the screen sharing video element and remove your stream
-                let localScreen = document.querySelector('#my-screen-video');
-                removeVideo(localScreen);
-
-                // Close all the screen share peer connections
-                let screenPeers = getPeers(mapScreenPeers);
-
-                for (index in screenPeers) {
-                    screenPeers[index].close();
-                }
-                
-                // Empty the screen sharing peer storage object
-                mapScreenPeers = {};
-                return;
-            }
-            
-            // Case: If the screen is not being shared, turn it on
-            screenShared = !screenShared;
-
-            navigator.mediaDevices.getDisplayMedia(constraints)
-                .then(stream => {
-                    localDisplayStream = stream;
-                    let localScreen = createVideo('my-screen');
-                    localScreen.srcObject = localDisplayStream;
-
-                    // Notify other peers regaring the screen sharing
-                    sendSignal('new-peer', {
-                        'local_screen_sharing': true,
-                    });
-                })
-                .catch(error => {
-                    console.log('Error occurred while accessing the display media.', error);
-                });
-
-            btnShareScreen.innerHTML = 'Stop Sharing';
-        }
     })
     .then(e => {
         btnRecordScreen.addEventListener('click', () => {
@@ -500,70 +519,29 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
         console.log("Connection opened.");
         newConnectionSound.play();
     };
+
     let remoteVideo = null;
 
-    if (!localScreenSharing && !remoteScreenSharing) { // Case: When no one is sharing screen in the room    
-        dc.onmessage = dcOnMessage;
-        remoteVideo = createVideo(peerUsername);
-        setOnTrack(peerUsername, peer, remoteVideo);
-        mapPeers[peerUsername] = [peer, dc];
+    dc.onmessage = dcOnMessage;
+    remoteVideo = createVideo(peerUsername);
+    setOnTrack(peerUsername, peer, remoteVideo);
+    mapPeers[peerUsername] = [peer, dc];
 
-        peer.oniceconnectionstatechange = () => {
-            let iceConnectionState = peer.iceConnectionState;
+    peer.oniceconnectionstatechange = () => {
+        let iceConnectionState = peer.iceConnectionState;
 
-            if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed"){
-                delete mapPeers[peerUsername];
+        if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed"){
+            alert("here 585");
+            delete mapPeers[peerUsername];
 
-                if (iceConnectionState != 'closed') {
-                    peer.close();
-                }
-
-                removeVideo(remoteVideo);
-                pinToMainScreen(username);
+            if (iceConnectionState != 'closed') {
+                peer.close();
             }
-        };
-    } else if (localScreenSharing && !remoteScreenSharing) { // Case: When you're sharing your screen
-        dc.onmessage = (e) => {
-            console.log('New message from %s\'s screen: ', peerUsername, e.data);
-        };
 
-        remoteVideo = createVideo(peerUsername + '-screen');
-        setOnTrack(peerUsername, peer, remoteVideo);
-        mapPeers[peerUsername + '-screen-share'] = [peer, dc];
-
-        peer.oniceconnectionstatechange = () => {
-            let iceConnectionState = peer.iceConnectionState;
-
-            if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-                delete mapPeers[peerUsername + '-screen-share'];
-
-                if (iceConnectionState != 'closed') {
-                    peer.close();
-                }
-
-                removeVideo(remoteVideo);
-                pinToMainScreen(username);
-            }
-        };
-    } else { // Case: Offerer itself is sharing his/her screen
-        dc.onmessage = (e) => {
-            console.log('New message from %s: ', peerUsername, e.data);
-        };
-
-        mapScreenPeers[peerUsername] = [peer, dc];
-
-        peer.oniceconnectionstatechange = () => {
-            let iceConnectionState = peer.iceConnectionState;
-
-            if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-                delete mapScreenPeers[peerUsername];
-
-                if (iceConnectionState != 'closed') {
-                    peer.close();
-                }
-            }
-        };
-    }
+            removeVideo(remoteVideo);
+            pinToMainScreen(myUsername);
+        }
+    };
 
     peer.onicecandidate = (event) => {
         if (event.candidate) {
@@ -585,97 +563,44 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
     return peer;
 }
 
-function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSharing, receiverChannelName){
+function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSharing, receiverChannelName) {
     let peer = new RTCPeerConnection(null);
     addLocalTracks(peer, localScreenSharing);
     let newConnectionSound = document.querySelector('#new-connection');
 
-    if (!localScreenSharing && !remoteScreenSharing) { // Case: When no one is sharing screen in the room
-        // Set remote video
-        let remoteVideo = createVideo(peerUsername);
+    let remoteVideo = createVideo(peerUsername);
 
-        // Add tracks to remote video
-        setOnTrack(peerUsername, peer, remoteVideo);
+    // Add tracks to remote video
+    setOnTrack(peerUsername, peer, remoteVideo);
 
-        peer.ondatachannel = e => {
-            peer.dc = e.channel;
-            peer.dc.onmessage = dcOnMessage;
-            peer.dc.onopen = () => {
-                console.log("Connection opened");
-                newConnectionSound.play();
-            }
-
-            // store the RTCPeerConnection and the corresponding RTCDataChannel after the RTCDataChannel is ready. Otherwise, `peer.dc` may be `undefined` as `peer.ondatachannel` would not be called yet
-            mapPeers[peerUsername] = [peer, peer.dc];
+    peer.ondatachannel = e => {
+        peer.dc = e.channel;
+        peer.dc.onmessage = dcOnMessage;
+        peer.dc.onopen = () => {
+            console.log("Connection opened");
+            newConnectionSound.play();
         }
 
-        peer.oniceconnectionstatechange = () => {
-            let iceConnectionState = peer.iceConnectionState;
-
-            if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-                delete mapPeers[peerUsername];
-
-                if (iceConnectionState != 'closed') {
-                    peer.close();
-                }
-
-                removeVideo(remoteVideo);
-                pinToMainScreen(username);
-            }
-        };
-    } else if (localScreenSharing && !remoteScreenSharing) { // Case: When you're sharing your screen
-        peer.ondatachannel = e => {
-            peer.dc = e.channel;
-            peer.dc.onmessage = (event) => {
-                console.log('New message from %s: ', peerUsername, event.data);
-            }
-            peer.dc.onopen = () => {
-                console.log("Connection opened.");
-                newConnectionSound.play();
-            }
-            mapScreenPeers[peerUsername] = [peer, peer.dc];
-            peer.oniceconnectionstatechange = () => {
-                let iceConnectionState = peer.iceConnectionState;
-
-                if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-                    delete mapScreenPeers[peerUsername];
-
-                    if (iceConnectionState != 'closed') {
-                        peer.close();
-                    }
-                }
-            };
-        }
-    } else { // Case: Offerer is sharing his/her screen
-        let remoteVideo = createVideo(peerUsername + '-screen');
-        setOnTrack(peerUsername, peer, remoteVideo);
-        peer.ondatachannel = e => {
-            peer.dc = e.channel;
-            peer.dc.onmessage = event => {
-                console.log('New message from %s\'s screen: ', peerUsername, event.data);
-            }
-            peer.dc.onopen = () => {
-                console.log("Connection opened.");
-                newConnectionSound.play();
-            }
-            mapPeers[peerUsername + '-screen-share'] = [peer, peer.dc];
-            
-        }
-        peer.oniceconnectionstatechange = () => {
-            let iceConnectionState = peer.iceConnectionState;
-
-            if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-                delete mapPeers[peerUsername + '-screen-share'];
-
-                if (iceConnectionState != 'closed') {
-                    peer.close();
-                }
-
-                removeVideo(remoteVideo);
-                pinToMainScreen(username);
-            }
-        };
+        // store the RTCPeerConnection and the corresponding RTCDataChannel after the RTCDataChannel is ready. Otherwise, `peer.dc` may be `undefined` as `peer.ondatachannel` would not be called yet
+        mapPeers[peerUsername] = [peer, peer.dc];
     }
+
+    peer.oniceconnectionstatechange = () => {
+        let iceConnectionState = peer.iceConnectionState;
+        console.log("state", iceConnectionState);
+
+        if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
+            alert("here 688");
+            delete mapPeers[peerUsername];
+
+            if (iceConnectionState != 'closed') {
+                peer.close();
+            }
+
+            removeVideo(remoteVideo);
+            pinToMainScreen(myUsername);
+        }
+    };
 
     peer.onicecandidate = (event) => {
         if (event.candidate) {
@@ -738,6 +663,14 @@ function dcOnMessage(event) {
     chatSound.play();
 }
 
+function getTargetDataChannel(targetUsername) {
+    if (targetUsername in mapPeers) {
+        return mapPeers[targetUsername][1];
+    }
+
+    return undefined;
+}
+
 function getDataChannels() {
     let dataChannels = [];
     
@@ -768,13 +701,50 @@ function pinToMainScreen(username) {
 function createVideoOverlay(username) {
     let html = `<div class="video-overlay">
     <button class="btn-pin-video-to-showcase rounded-pill btn btn-light" onclick="pinToMainScreen('${username}')"><i class="fa-solid fa-thumbtack"></i></button>`;
-
-    if (isHost)
+    
+    if (isHost && username != myUsername)
         html += `<button class="btn-toggle-video-lock ms-2 rounded-pill btn btn-light" onclick="muteUserVideo(this, '${username}')"><i class="fa-solid fa-video-slash"></i></button>
-        <button class="btn-toggle-audio-lock ms-2 rounded-pill btn btn-light"  onclick="muteUserAudio(this, '${username}')"><i class="fa-solid fa-microphone-slash"></i></button>`;
+        <button class="btn-toggle-audio-lock ms-2 rounded-pill btn btn-light"  onclick="muteUserAudio(this, '${username}')"><i class="fa-solid fa-microphone-slash"></i></button>
+        <button class="btn-kick-user ms-2 rounded-pill btn btn-light"  onclick="kickUser('${username}')"><i class="fa-solid fa-trash"></i></button>`;
 
     html += `</div>`;
     return html;
+}
+
+function simpleToastHTML(text) {
+    return `<div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+        <div class="toast-body">
+            ${text}
+        </div>
+        </div>
+    </div>`;
+}
+
+function raiseHandHTML(text) {
+    return `<div class="toast fade" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <p class="m-0 me-2">🖐️</p>
+            <strong class="me-auto me-2">${text}</strong>
+            <small>${new Date().toLocaleTimeString()}</small>
+        </div>
+    </div>`;
+}
+
+function handRaised(text) {
+    toastsContainer.insertAdjacentHTML("beforeend", raiseHandHTML(text));
+    activateToasts();
+}
+
+function activateToasts() {
+    const toastElList = document.querySelectorAll('.toast');
+    const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
+    toastList.forEach((item, index) => {
+        item.show();
+        addEventListener('hidden.bs.toast', () => {
+            toastElList[index].remove();
+        });
+    });
 }
 
 function createVideo(peerUsername) {

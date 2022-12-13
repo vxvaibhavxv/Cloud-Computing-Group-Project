@@ -1,32 +1,41 @@
 {% extends 'main.html' %}
 
 {% block content %}
-    <div class="form-wrapper">
-        <form action="" method="post">
-            {% csrf_token %}
-            {% for field in form %}
-
-                <p>
-
-                    {{ field.label_tag }}
-                    {{ field }}
-
-                    {% if field.help_text %}
-
-                        <small style="color: black;"> {{ field.help_text }} </small>
-
+    <div class="form-wrapper card" id="register">
+        <div class="card-header">
+            Create Room
+        </div>
+        <div class="card-body">
+            <form action="" method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    {% if field.field.widget.attrs.order == 's' %}
+                    <div class="row mb-3">
                     {% endif %}
-
-                    {% for error in field.errors %}
-
-                        <p style="color: red;"> {{ error }} </p>
-
-                    {% endfor %}
-
-                </p>
-
-            {% endfor %}
-            <button class="btn btn-outline-primary" type="submit">Create Room</button>
-        </form>
+                    {% if field.field.widget.attrs.order == 'a' %}
+                    <div class="row mb-3">
+                    {% endif %}
+                        <div class="col">
+                            {{ field.label_tag }}
+                            {{ field }}
+    
+                            {% if field.help_text %}
+                                <small class="text-danger"> {{ field.help_text }} </small>
+                            {% endif %}
+    
+                            {% for error in field.errors %}
+                                <p style="color: red;"> {{ error }} </p>
+                            {% endfor %}
+                        </div>
+                    {% if field.field.widget.attrs.order == 'e' %}
+                    </div>
+                    {% endif %}
+                    {% if field.field.widget.attrs.order == 'a' %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+                <button class="btn btn-dark" type="submit">Create Room</button>
+            </form>
+        </div>
     </div>
 {% endblock %}

@@ -1,0 +1,163 @@
+{% extends 'main.html' %}
+
+{% block content %}
+    <script>
+        function activateToasts() {
+            const toastElList = document.querySelectorAll('.toast');
+            const toastList = [...toastElList].map(toastEl => new bootstrap.Toast(toastEl));
+            toastList.forEach((item, index) => {
+                item.show();
+                addEventListener('hidden.bs.toast', () => {
+                    toastElList[index].remove();
+                });
+            });
+        }
+
+        function simpleToastHTML(text) {
+            return `<div class="toast align-items-center" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                <div class="toast-body">
+                    ${text}
+                </div>
+                </div>
+            </div>`;
+        }
+
+        function addToast(text) {
+            document.getElementById("toast-messages").insertAdjacentHTML("beforeend", simpleToastHTML(text));
+            activateToasts();
+        }
+
+        function saveRoomForm(element) {
+            element.closest(".edit-form").submit();
+        }
+
+        function joinRoom(element) {
+            element.closest("tr").querySelector(".join-form").submit();
+        }
+
+        activateToasts();
+    </script>
+    <div class="nav justify-content-center">
+        <form method="POST" action="." class="form w-100">
+            <div class="input-group mb-3 w-100">
+                {% csrf_token %}
+                <input type="text" required name="room-input" class="form-control" placeholder="Enter a valid room code">
+                <button type="submit" class="btn btn-dark input-group-text" id="basic-addon1">Join Room</button>
+              </div>
+        </form>
+        {% if warning %}
+            <div class="alert alert-danger" role="alert">
+                Room does't exist! Please enter a valid room code.
+            </div>
+        {% endif %}
+    </div>
+    <hr>
+    <div class="nav justify-content-center mb-3">
+        <a class="btn btn-success" href="{% url 'room_creation_view' %}"><i class="fa-solid fa-plus me-2"></i>Create New Room</a>
+    </div>
+    <div id="rooms" class="nav justify-content-center">
+        <table class="table table-striped table-hover border">
+            <thead>
+                <tr>
+                    <th width="5%" scope="col">#</th>
+                    <th width="25%" scope="col">Room Name</th>
+                    <th width="15%" scope="col">Limit</th>
+                    <th width="15%" scope="col">Waiting Rooms</th>
+                    <th width="40%" scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for room in rooms %}
+                <tr>
+                    <form action="{% url 'room' room.code %}" class="join-form" method="POST">
+                        {% csrf_token %}
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ room.name }}</td>
+                        <td><input type="number" name="limit" class="form-control" min="1" max="200" value="100"></td>
+                        <td>
+                            <select name="waiting_room" class="form-select">
+                                <option value="true">True</option>
+                                <option value="false">False</option>
+                            </select>
+                        </td>
+                    </form>
+                    <td>
+                        <button type="button" onclick="joinRoom(this);" class="btn btn-sm btn-dark"><i class="fa-solid fa-right-to-bracket me-2"></i>Join Room</button>
+                        <button type="button" id="{{room.code}}" class="btn btn-sm btn-dark"><i class="fa-solid fa-copy me-2"></i>Copy Room Code</button>
+                        <button type="button" id="{{room.code}}" class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#editModal-{{ forloop.counter }}"><i class="fa-solid fa-trash me-2"></i>Edit</button>
+                        <button type="button" id="{{room.code}}" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ forloop.counter }}"><i class="fa-solid fa-trash me-2"></i>Delete</button>
+                        <div class="modal fade" id="deleteModal-{{ forloop.counter }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                            aria-labelledby="deleteModalLabel-{{ forloop.counter }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="deleteModalLabel-{{ forloop.counter }}">Are you sure?</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        This action can't be undone and it will permanently delete the room.
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a href="{% url 'delete_room' room.code %}" class="btn btn-primary">Yes, delete room</a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal fade" id="editModal-{{ forloop.counter }}" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+                            aria-labelledby="editModalLabel-{{ forloop.counter }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="editModalLabel-{{ forloop.counter }}">Edit Room</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{% url 'edit_room' room.code %}" class="edit-form" method="POST">
+                                        {% csrf_token %}
+                                        <div class="modal-body">    
+                                            <div class="mb-3">
+                                                <label for="roomName" class="form-label">Room Name address</label>
+                                                <input required type="text" name="roomName" class="form-control" id="roomName" value="{{ room.name }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="roomCode" class="form-label">Room Code address</label>
+                                                <input required type="text" name="roomCode" class="form-control" id="roomCode" value="{{ room.code }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="roomDescription" class="form-label">Room Description</label>
+                                                <textarea rows="10" name="roomDescription" class="form-control">{{ room.description }}</textarea>
+                                            </div>  
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" onclick="saveRoomForm(this)" class="btn btn-success">Save Changes</button>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            var btnCopy = document.querySelector('#{{room.code}}');
+                            btnCopy.addEventListener('click', () => {
+                                var copyText = document.createElement('textarea');
+                                document.body.appendChild(copyText);
+                                copyText.innerHTML = '{{room.code}}';
+
+                                /* Select the text field */
+                                copyText.select();
+                                copyText.setSelectionRange(0, 99999); /* For mobile devices */
+
+                                /* Copy the text inside the text field */
+                                document.execCommand("copy");
+                                document.body.removeChild(copyText);
+                                addToast("Room code copied!"); 
+                            });
+                        </script>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

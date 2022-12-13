@@ -1,12 +1,12 @@
 {% extends 'main.html' %}
 
 {% block content %}
-    <div class="form-wrapper card">
+    <div class="form-wrapper card" id="register">
         <div class="card-header">
-            Profile
+            Log In
         </div>
         <div class="card-body">
-            <form action="" method="post" enctype="multipart/form-data">
+            <form action="" method="post">
                 {% csrf_token %}
                 {% for field in form %}
                     {% if field.field.widget.attrs.order == 's' %}
@@ -34,7 +34,7 @@
                     </div>
                     {% endif %}
                 {% endfor %}
-                <button class="btn btn-dark" type="submit">Update</button>
+                <button class="btn btn-dark" type="submit">Log In</button>
             </form>
         </div>
     </div>
