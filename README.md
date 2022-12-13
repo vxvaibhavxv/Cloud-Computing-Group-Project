@@ -16,10 +16,10 @@ Follow the steps ahead to set up and run the project.
     SECRET_KEY=<any-hash-value>
 
     # Development
-    LOCAL_SETTINGS_MODULE=homiechat.settings.development
+    LOCAL_SETTINGS_MODULE=video_chat.settings.development
 
     # Production
-    LOCAL_SETTINGS_MODULE=homiechat.settings.production
+    LOCAL_SETTINGS_MODULE=video_chat.settings.production
     ```
 7. Create database migrations using `python manage.py makemigrations` and then migrate them using `python manage.py migrate`.
 8. Create a superuser using the following `python manage.py createsuperuser` and fill the required details.

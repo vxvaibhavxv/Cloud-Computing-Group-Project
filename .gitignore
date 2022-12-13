@@ -2,7 +2,7 @@ environment
 env
 venv
 */db.sqlite3
-*/homiechat/media
+*/video_chat/media
 __pycache__/
 *.pyc
 .env

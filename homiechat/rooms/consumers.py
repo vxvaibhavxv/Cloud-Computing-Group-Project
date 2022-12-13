@@ -111,6 +111,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     },
                 }
             )
+        elif self.room_owner != user.username:
+            await self.channel_layer.send(
+                rooms[self.room_group_name]["members"][user.username][1],
+                {
+                    'type': 'send.sdp',
+                    'receive_dict': {
+                        "peer": user.username,
+                        "action": "start-setup",
+                        "message": "Host accepted your request to join the room."
+                    },
+                }
+            )
         
         print(json.dumps(rooms[room_code], indent = 4))
 

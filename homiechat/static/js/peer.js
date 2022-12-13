@@ -481,7 +481,7 @@ function setUp() {
                 // Saving the screen recording
                 recorder.stopRecording(function() {
                     let blob = recorder.getBlob();
-                    let fileName = new Date().toLocaleString().replaceAll(",","").replaceAll("/", "-").replaceAll(":", "-");
+                    let fileName = new Date().toLocaleString().replaceAll(",","").replaceAll("/", "-").replaceAll(":", "-") + " Room Recording";
                     invokeSaveAsDialog(blob, fileName);
                 });
             } else { // Case: If not recording, turn it on
@@ -514,10 +514,8 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
     let peer = new RTCPeerConnection(null);
     addLocalTracks(peer, localScreenSharing);
     let dc = peer.createDataChannel("channel");
-    let newConnectionSound = document.querySelector('#new-connection');
     dc.onopen = () => {
         console.log("Connection opened.");
-        newConnectionSound.play();
     };
 
     let remoteVideo = null;
@@ -566,7 +564,6 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
 function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSharing, receiverChannelName) {
     let peer = new RTCPeerConnection(null);
     addLocalTracks(peer, localScreenSharing);
-    let newConnectionSound = document.querySelector('#new-connection');
 
     let remoteVideo = createVideo(peerUsername);
 
@@ -578,7 +575,6 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
         peer.dc.onmessage = dcOnMessage;
         peer.dc.onopen = () => {
             console.log("Connection opened");
-            newConnectionSound.play();
         }
 
         // store the RTCPeerConnection and the corresponding RTCDataChannel after the RTCDataChannel is ready. Otherwise, `peer.dc` may be `undefined` as `peer.ondatachannel` would not be called yet

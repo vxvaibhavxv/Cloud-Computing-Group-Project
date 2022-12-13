@@ -98,14 +98,14 @@ def user_update_view(request):
             form = UpdateUserForm(instance=user)
             context['form'] = form
             messages.success(request, "Profile updated successfully!")
-            return render(request, 'rooms/user_update_view.html', context=context)
+            return render(request, 'rooms/update-user.html', context=context)
         else:
             context['form'] = form
     else: # GET request
         form = UpdateUserForm(instance=user)
         context['form'] = form
 
-    return render(request, 'rooms/user_update_view.html', context=context)
+    return render(request, 'rooms/update-user.html', context=context)
 
 @login_required
 def room_creation_view(request):
@@ -133,12 +133,7 @@ def room_creation_view(request):
         roomcreationform = RoomCreationForm()
         context['form'] = roomcreationform
 
-    return render(request, 'rooms/room_creation_view.html', context=context)
-
-@login_required
-def prepare_chat_view(request):
-    context = {}
-    return render(request, 'rooms/prepare_chat_view.html', context=context)
+    return render(request, 'rooms/create-room.html', context=context)
 
 @login_required
 def room(request, room_code):
@@ -155,24 +150,6 @@ def room(request, room_code):
         context["limit"] = int(request.POST.get("limit"))
     
     return render(request, 'rooms/room.html', context=context)
-
-@login_required
-def select_room_view(request):
-    context = {}
-    room_code = request.GET.get('room-input')
-    context['placeholder'] = 'Enter room code ...'
-
-    if room_code == None:
-        context['warning'] = False
-        return render(request, 'rooms/select_room_view.html', context=context)
-    
-    room_exists = Room.objects.filter(code=room_code).exists()
-
-    if room_exists:
-        return redirect('room', room_code=room_code)
-    
-    context['warning'] = True
-    return render(request, 'rooms/select_room_view.html', context)
 
 @login_required
 def delete_room(request, room_code):

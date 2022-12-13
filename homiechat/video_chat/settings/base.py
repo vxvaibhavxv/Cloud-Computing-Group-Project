@@ -29,7 +29,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'homiechat.urls'
+ROOT_URLCONF = 'video_chat.urls'
 
 TEMPLATES = [
     {
@@ -47,7 +47,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'homiechat.wsgi.application'
+WSGI_APPLICATION = 'video_chat.wsgi.application'
 
 DEFAULT_AUTO_FIELD ='django.db.models.AutoField'
 
@@ -80,6 +80,6 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'homiechat', 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'video_chat', 'media')
 
-ASGI_APPLICATION = 'homiechat.asgi.application'
+ASGI_APPLICATION = 'video_chat.asgi.application'
