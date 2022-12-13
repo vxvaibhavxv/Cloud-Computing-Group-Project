@@ -45,12 +45,5 @@ Follow the steps ahead to set up and run the project.
 * Global and private messages
 
 ## Features: TODO
-* Share Screen
-* Roll-based access
-    * General
-        * Attach files to the meeting (TBD)
-        * Attach files to messages (optional)
-        * Share meeting details (TBD)
 * Extend support to users over different internet connections (TBD)
-* Configure Redis (optional)
 * Host (optional)
