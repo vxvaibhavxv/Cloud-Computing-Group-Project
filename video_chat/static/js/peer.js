@@ -127,7 +127,7 @@ function openRoom() {
 
 // Join room (initiate websocket connection) on button click
 function joinRoom() {
-    console.log("JPining room!")
+    console.log("Joining room!")
     // Configure the websocket connection
     webSocket = new WebSocket(endPoint);    
 
@@ -529,7 +529,6 @@ function createOfferer(peerUsername, localScreenSharing, remoteScreenSharing, re
         let iceConnectionState = peer.iceConnectionState;
 
         if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed"){
-            alert("here 585");
             delete mapPeers[peerUsername];
 
             if (iceConnectionState != 'closed') {
@@ -586,7 +585,6 @@ function createAnswerer(offer, peerUsername, localScreenSharing, remoteScreenSha
         console.log("state", iceConnectionState);
 
         if (iceConnectionState === "failed" || iceConnectionState === "disconnected" || iceConnectionState === "closed") {
-            alert("here 688");
             delete mapPeers[peerUsername];
 
             if (iceConnectionState != 'closed') {
