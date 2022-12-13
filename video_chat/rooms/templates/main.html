@@ -21,7 +21,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <title>Chatter Box</title>
+    <title>V-Talks</title>
 </head>
 <body class="bg-light">
     <div id="toast-messages">
@@ -39,7 +39,7 @@
     <nav id="navbar" class="navbar navbar-expand-lg bg-white">
         <div class="container-fluid">
             <div>
-                <a class="navbar-brand" href="{% url 'home' %}">Chatter Box</a>
+                <a class="navbar-brand" href="{% url 'home' %}">V-Talks</a>
             </div>
             <div class="d-flex">
                 {% if request.user.is_authenticated %}
