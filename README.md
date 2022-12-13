@@ -41,6 +41,7 @@ Follow the steps ahead to set up and run the project.
 * Update project details
 * Waiting Rooms
 * Raise hand
+* Update UI
 * Global and private messages
 
 ## Features: TODO
@@ -50,7 +51,6 @@ Follow the steps ahead to set up and run the project.
         * Attach files to the meeting (TBD)
         * Attach files to messages (optional)
         * Share meeting details (TBD)
-* Update UI (TBD)
 * Extend support to users over different internet connections (TBD)
 * Configure Redis (optional)
 * Host (optional)
