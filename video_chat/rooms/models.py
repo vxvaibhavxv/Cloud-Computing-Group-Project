@@ -85,7 +85,7 @@ class User(AbstractBaseUser):
         return True
 
     class Meta:
-        verbose_name_plural = "Homie Chat Users"
+        verbose_name_plural = "V-Talks Users"
 
 class Room(models.Model):
     code = models.CharField(max_length=44, unique=True)
